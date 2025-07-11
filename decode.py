@@ -4,8 +4,10 @@ import _thread
 from aprs import APRSFrame
 from queue import Queue
 import datetime as dt
+import database
 
 received = Queue()
+moved = Queue()
 located = {}
 
 def add_location(frame: APRSFrame):
@@ -18,6 +20,8 @@ def add_location(frame: APRSFrame):
     data["altitude"] = str(frame.info._position.altitude_ft)
     data["timestamp"] = dt.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
     located[str(frame.source)] = data
+    moved.put(data)
+    database.store(data)
 
 def initialize_kiss():
     ip = os.getenv("KISS_IP")

@@ -48,6 +48,30 @@
           zoom: 9 // starting zoom
         });
 
+        const stationMarkers = new Map()
+
+        function update_marker(data){
+            const lat = parseFloat(data.latitude);
+            const lon = parseFloat(data.longitude);
+
+            const marker = new maplibregl.Marker()
+                .setLngLat([lon, lat])
+                .setPopup(
+                    new maplibregl.Popup({ offset: 25 })
+                        .setHTML(
+                            `<strong>Source:</strong> ${data.source}<br>` +
+                            `<strong>Destination:</strong> ${data.destination}<br>` +
+                            `<strong>Altitude:</strong> ${data.altitude}<br>` +
+                            `<strong>Timestamp:</strong> ${data.timestamp}`
+                        )
+                );
+            if (stationMarkers.has(data.source)) {
+                stationMarkers.get(data.source).remove();
+            }
+            marker.addTo(map);
+            stationMarkers.set(data.source, marker);
+        }
+
         fetch('/stations')
             .then(response => response.json())
             .then(dataArray => {
@@ -67,18 +91,7 @@
 
                     bounds.extend([lon, lat]);
 
-                    new maplibregl.Marker()
-                        .setLngLat([lon, lat])
-                        .setPopup(
-                            new maplibregl.Popup({ offset: 25 })
-                                .setHTML(
-                                    `<strong>Source:</strong> ${data.source}<br>` +
-                                    `<strong>Destination:</strong> ${data.destination}<br>` +
-                                    `<strong>Altitude:</strong> ${data.altitude}<br>` +
-                                    `<strong>Timestamp:</strong> ${data.timestamp}`
-                                )
-                        )
-                        .addTo(map);
+                    update_marker(data);
                 });
 
                 // Zoom map to fit all markers
@@ -90,6 +103,20 @@
                 console.error("Failed to fetch APRS data:", error);
             });
 
+        const locationSource = new EventSource("/locations");
+
+        locationSource.onmessage = function(event){
+            const data = JSON.parse(event.data);
+
+            const lat = parseFloat(data.latitude);
+            const lon = parseFloat(data.longitude);
+
+            if (isNaN(lat) || isNaN(lon)) return; // Skip invalid points
+
+            update_marker(data);
+
+        };
+        
         const terminal = document.getElementById("terminal");
         const eventSource = new EventSource("/packets");
 
@@ -99,7 +126,7 @@
             p.textContent = msg;
             terminal.appendChild(p);
             terminal.scrollTop = terminal.scrollHeight;
-        }
+        };
 
         eventSource.onerror = function() {
             const p = document.createElement("div");

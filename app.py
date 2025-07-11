@@ -1,11 +1,12 @@
-import time
-from operator import truediv
 from threading import Thread
 from flask import Flask, render_template, Response, stream_with_context
-from decode import initialize_kiss, located, received
-
+import database
+from decode import initialize_kiss, located, received, moved
+import json
 
 def create_app():
+    database.create_db()
+
     app = Flask(__name__)
 
     kiss_thread = Thread(target=initialize_kiss)
@@ -19,12 +20,20 @@ def create_app():
     def stations():
         return list(located.values())
 
+    @app.route("/locations")
+    def locations():
+        def stream():
+            while True:
+                new_loc = moved.get()
+                print(new_loc)
+                yield f"data: {json.dumps(new_loc)}\n\n"
+        return Response(stream_with_context(stream()), content_type='text/event-stream')
+
     @app.route("/packets")
     def broadcast():
         def stream():
             while True:
                 message = received.get()
-                print(message)
                 yield f"data: {str(message)}\n\n"
         return Response(stream_with_context(stream()), content_type='text/event-stream')
 
