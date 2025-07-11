@@ -25,10 +25,10 @@ def add_location(frame: APRSFrame):
     data["destination"] = str(frame.destination)
     data["type"] = str(packet)
     data["path"] = path_tostr(frame.path)
-    data["timestamp"] = dt.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    data["timestamp"] = dt.datetime.now().isoformat()
     data["comment"] = str(frame.info.comment.decode("utf-8"))
     print(frame.info.data)
-    if packet == "PositionReport":
+    if str(packet) == "PositionReport":
         data["latitude"] = float(frame.info._position.lat)
         data["longitude"] = float(frame.info._position.long)
         data["altitude"] = str(frame.info._position.altitude_ft)

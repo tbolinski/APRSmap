@@ -32,9 +32,38 @@
         .popup-title {
             font-weight: bold;
         }
+
+        #filterPanel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+            z-index: 999;
+            font-size: 14px;
+            font-family: sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #filterPanel input[type="number"] {
+            width: 60px;
+            padding: 2px 5px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
+    <div id="filterPanel">
+        <label for="maxAge">Show stations seen within last </label>
+        <input type="number" id="maxAge" value="15" min="1" max="1440" />
+        <label>minutes</label>
+    </div>
 
     <div id='map'></div>
     <div id="terminal"></div>
@@ -49,6 +78,7 @@
         });
 
         const stationMarkers = new Map()
+        const times = new Map
 
         function update_marker(data){
             const lat = parseFloat(data.latitude);
@@ -72,7 +102,27 @@
             }
             marker.addTo(map);
             stationMarkers.set(data.source, marker);
+            times.set(data.source, data.timestamp);
         }
+
+        function remove_old(maxAge){
+            if (isNaN(maxAge)) {maxAge = 15}
+            const now = new Date();
+
+            for (const [key, marker] of stationMarkers.entries()){
+                const timestamp = times.get(key)
+                const seen = new Date(timestamp);
+                const age = now - seen;
+
+                if (age > maxAge * 60000){
+                    stationMarkers.get(key).remove();
+                    stationMarkers.delete(key);
+                    times.delete(key);
+                }
+            }
+        }
+
+        setInterval(() => remove_old(parseInt(document.getElementById("maxAge").value)), 15000)
 
         fetch('/stations')
             .then(response => response.json())
@@ -95,6 +145,8 @@
 
                     update_marker(data);
                 });
+
+                remove_old(parseInt(document.getElementById("maxAge").value));
 
                 // Zoom map to fit all markers
                 if (!bounds.isEmpty()) {
