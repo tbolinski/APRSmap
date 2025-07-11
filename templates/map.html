@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>APRS map</title>
+    <meta charset="utf-8" />
+    <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet' />
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #map {
+            flex: 2;
+            width: 100%;
+        }
+
+        #terminal {
+            flex: 1;
+            background-color: #111;
+            color: #0f0;
+            font-family: monospace;
+            padding: 10px;
+            overflow-y: auto;
+            height: 300px;
+            border-top: 2px solid #444;
+        }
+
+        .popup-title {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id='map'></div>
+    <div id="terminal"></div>
+
+    <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
+    <script>
+        var map = new maplibregl.Map({
+          container: 'map',
+          style: 'https://raw.githubusercontent.com/GGORG0/MapKom/refs/heads/master/mapkom_client/lib/mapStyles/light.json', // stylesheet location
+          center: [17, 51], // starting position [lng, lat]
+          zoom: 9 // starting zoom
+        });
+
+        fetch('/stations')
+            .then(response => response.json())
+            .then(dataArray => {
+                if (!Array.isArray(dataArray) || dataArray.length === 0) {
+                    console.warn("No APRS data to show.");
+                    return;
+                }
+
+                // Fit map to all markers
+                const bounds = new maplibregl.LngLatBounds();
+
+                dataArray.forEach(data => {
+                    const lat = parseFloat(data.latitude);
+                    const lon = parseFloat(data.longitude);
+
+                    if (isNaN(lat) || isNaN(lon)) return; // Skip invalid points
+
+                    bounds.extend([lon, lat]);
+
+                    new maplibregl.Marker()
+                        .setLngLat([lon, lat])
+                        .setPopup(
+                            new maplibregl.Popup({ offset: 25 })
+                                .setHTML(
+                                    `<strong>Source:</strong> ${data.source}<br>` +
+                                    `<strong>Destination:</strong> ${data.destination}<br>` +
+                                    `<strong>Altitude:</strong> ${data.altitude}<br>` +
+                                    `<strong>Timestamp:</strong> ${data.timestamp}`
+                                )
+                        )
+                        .addTo(map);
+                });
+
+                // Zoom map to fit all markers
+                if (!bounds.isEmpty()) {
+                    map.fitBounds(bounds, { padding: 50 });
+                }
+            })
+            .catch(error => {
+                console.error("Failed to fetch APRS data:", error);
+            });
+
+        const terminal = document.getElementById("terminal");
+        const eventSource = new EventSource("/packets");
+
+        eventSource.onmessage = function(event) {
+            const msg = event.data;
+            const p = document.createElement("div");
+            p.textContent = msg;
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        eventSource.onerror = function() {
+            const p = document.createElement("div");
+            p.textContent = "[ERROR] Disconnected from server";
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+        };
+
+    </script>
+
+</body>
+</html>
