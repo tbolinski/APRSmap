@@ -1,7 +1,7 @@
 import os
 import aprs
 import _thread
-from aprs import APRSFrame
+from aprs import APRSFrame, StatusReport, PositionReport
 from queue import Queue
 import datetime as dt
 import database
@@ -12,16 +12,23 @@ located = {}
 
 def add_location(frame: APRSFrame):
     data = {}
+    packet = frame.info.__class__.__name__
     data["source"] = str(frame.source)
     data["destination"] = str(frame.destination)
+    data["type"] = str(packet)
     #data["path"] = str(frame.path)
-    data["latitude"] = str(frame.info._position.lat)
-    data["longitude"] = str(frame.info._position.long)
-    data["altitude"] = str(frame.info._position.altitude_ft)
     data["timestamp"] = dt.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-    located[str(frame.source)] = data
-    moved.put(data)
-    database.store(data)
+    if packet == "PositionReport":
+        data["latitude"] = str(frame.info._position.lat)
+        data["longitude"] = str(frame.info._position.long)
+        data["altitude"] = str(frame.info._position.altitude_ft)
+        moved.put(data)
+        located[str(frame.source)] = data
+        database.store(data)
+    else:
+        data["data"] = str(frame.info.data.decode("utf-8"))
+    data["comment"] = str(frame.info.comment.decode("utf-8"))
+    received.put(data)
 
 def initialize_kiss():
     ip = os.getenv("KISS_IP")
@@ -32,6 +39,4 @@ def initialize_kiss():
     while True:
         frames = kiss.read(min_frames=1)
         for frame in frames:
-            if hasattr(frame.info, "_position"):
-                if float(frame.info._position.lat) != 0 and float(frame.info._position.long) != 0: _thread.start_new_thread(add_location, (frame,))
-            received.put(frame)
+            add_location(frame)

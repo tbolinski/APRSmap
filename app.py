@@ -25,7 +25,6 @@ def create_app():
         def stream():
             while True:
                 new_loc = moved.get()
-                print(new_loc)
                 yield f"data: {json.dumps(new_loc)}\n\n"
         return Response(stream_with_context(stream()), content_type='text/event-stream')
 
@@ -34,7 +33,8 @@ def create_app():
         def stream():
             while True:
                 message = received.get()
-                yield f"data: {str(message)}\n\n"
+                print(message)
+                yield f"data: {json.dumps(message)}\n\n"
         return Response(stream_with_context(stream()), content_type='text/event-stream')
 
     return app
