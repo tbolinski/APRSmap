@@ -122,10 +122,11 @@
 
         eventSource.onmessage = function(event) {
             const msg = event.data;
+            const terminalDistance = terminal.scrollTop + terminal.clientHeight == terminal.scrollHeight;
             const p = document.createElement("div");
             p.textContent = msg;
             terminal.appendChild(p);
-            terminal.scrollTop = terminal.scrollHeight;
+            if (terminalDistance) {terminal.scrollTop = terminal.scrollHeight;}
         };
 
         eventSource.onerror = function() {
