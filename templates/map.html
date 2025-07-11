@@ -60,8 +60,10 @@
                     new maplibregl.Popup({ offset: 25 })
                         .setHTML(
                             `<strong>Source:</strong> ${data.source}<br>` +
+                            `<strong>Path:</strong> ${(data.path).substring(0, (data.path).length-4)}<br>` +
                             `<strong>Destination:</strong> ${data.destination}<br>` +
                             `<strong>Altitude:</strong> ${data.altitude}<br>` +
+                            `<strong>Comment:</strong> ${data.comment}<br>` +
                             `<strong>Timestamp:</strong> ${data.timestamp}`
                         )
                 );
@@ -125,7 +127,7 @@
             const terminalDistance = terminal.scrollTop + terminal.clientHeight == terminal.scrollHeight;
             const p = document.createElement("div");
 
-            let line = `[${data.timestamp}] ${data.source} -> ${data.destination} (${data.type})`
+            let line = `[${data.timestamp}] ${data.source} -> ${data.path}${data.destination} (${data.type})`
 
             if (data.type == "PositionReport"){
                 line += ` @ (${Math.round(data.latitude*100)/100}, ${Math.round(data.longitude*100)/100})`;

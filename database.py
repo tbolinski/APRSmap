@@ -11,7 +11,9 @@ def create_db():
         latitude REAL,
         longitude REAL,
         altitude REAL,
-        timestamp TEXT)""")
+        timestamp TEXT,
+        comment TEXT,
+        path TEXT)""")
     connection.commit()
     connection.close()
 
@@ -20,7 +22,7 @@ def store(data: {}):
     cursor = connection.cursor()
     cursor.execute("""
         INSERT INTO APRS_packets (
-        source, destination, latitude, longitude, altitude, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)""", (data["source"], data["destination"], data["latitude"], data["longitude"], data["altitude"], data["timestamp"]))
+        source, destination, latitude, longitude, altitude, timestamp, comment, path)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", (data["source"], data["destination"], data["latitude"], data["longitude"], data["altitude"], data["timestamp"], data["comment"], data["path"]))
     connection.commit()
     connection.close()

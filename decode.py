@@ -4,11 +4,19 @@ import _thread
 from aprs import APRSFrame, StatusReport, PositionReport
 from queue import Queue
 import datetime as dt
+from ax253 import Address
 import database
 
 received = Queue()
 moved = Queue()
 located = {}
+
+def path_tostr(path):
+    nodes = ""
+    for addr in path:
+        nodes += str(addr)
+        nodes += " -> "
+    return nodes
 
 def add_location(frame: APRSFrame):
     data = {}
@@ -16,18 +24,20 @@ def add_location(frame: APRSFrame):
     data["source"] = str(frame.source)
     data["destination"] = str(frame.destination)
     data["type"] = str(packet)
-    #data["path"] = str(frame.path)
+    data["path"] = path_tostr(frame.path)
     data["timestamp"] = dt.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    data["comment"] = str(frame.info.comment.decode("utf-8"))
+    print(frame.info.data)
     if packet == "PositionReport":
-        data["latitude"] = str(frame.info._position.lat)
-        data["longitude"] = str(frame.info._position.long)
+        data["latitude"] = float(frame.info._position.lat)
+        data["longitude"] = float(frame.info._position.long)
         data["altitude"] = str(frame.info._position.altitude_ft)
-        moved.put(data)
-        located[str(frame.source)] = data
-        database.store(data)
+        if float(frame.info._position.lat) != 0 and float(frame.info._position.long) != 0:
+            moved.put(data)
+            located[str(frame.source)] = data
+            database.store(data)
     else:
         data["data"] = str(frame.info.data.decode("utf-8"))
-    data["comment"] = str(frame.info.comment.decode("utf-8"))
     received.put(data)
 
 def initialize_kiss():
@@ -39,4 +49,4 @@ def initialize_kiss():
     while True:
         frames = kiss.read(min_frames=1)
         for frame in frames:
-            add_location(frame)
+            _thread.start_new_thread(add_location, (frame,))

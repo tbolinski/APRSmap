@@ -33,7 +33,6 @@ def create_app():
         def stream():
             while True:
                 message = received.get()
-                print(message)
                 yield f"data: {json.dumps(message)}\n\n"
         return Response(stream_with_context(stream()), content_type='text/event-stream')
 
