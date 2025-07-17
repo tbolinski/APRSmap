@@ -4,7 +4,7 @@
 It is a simple map displaying APRS transmissions, decoded from a KISS interface.
 
 ## How to run
-1. Setup a working APRS decoder availiable using a KISS interface. [Sample setup below](#kiss-interface-tnc)
+1. Setup a working APRS decoder availiable using a KISS interface. [Sample setup below](#kiss-interface-tnc). If you are running a different config supply the KISS ip, and port wih the envs: `KISS_IP` and `KISS_PORT`, no need to do that if running direwolf.com
 2. Create a python virtual environment, and install all of the required packages `pip -r requirements.txt`
 3. Run the flask webapp. You can start a development server just by running the `app.py` file like this: `python app.py`, or using gunicorn `gunicorn -k gevent -w 2 --bind 0.0.0.0:5000 "app:create_app()"`
 4. The webapp should be accesible on port `5000`
